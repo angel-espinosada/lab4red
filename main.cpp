@@ -1,42 +1,38 @@
 #include <iostream>
-#include <map>
 #include <string>
-#include "Enrutador.h"
 #include "red.h"
-
 
 using namespace std;
 
 int main()
 {
     Red red;
-    Enrutador enrutador;
-    int opcion= -1;
+    int opcion = -1;
 
-    while (opcion!=0) {
+    while (opcion != 0) {
         cout << "\n===== MENU DE RED DE ENRUTADORES =====\n";
         cout << "1. Agregar enrutador\n";
         cout << "2. Conectar enrutadores (vecinos)\n";
         cout << "3. Eliminar enrutador\n";
         cout << "4. Mostrar red\n";
-        cout << "5. Calcular ruta mas corta (Dijkstra)\n";
-        cout << "6. Iteraciones y medicion de memoria (simulacion)\n";
-        cout << "7. Mostrar Enrutadores\n";
+        cout << "5. Calcular ruta mas corta\n";
+        cout << "6. Mostrar tabla de costos de un enrutador\n";
+        cout << "7. Mostrar enrutadores\n";
         cout << "8. Generar red aleatoria\n";
         cout << "9. Guardar red en archivo\n";
         cout << "10. Cargar red desde archivo\n";
-        cout<< "12. mostrar vecinos\n";
+        cout << "11. Eliminar enlace\n";
+        cout << "12. Mostrar vecinos\n";
         cout << "0. Salir\n";
         cin >> opcion;
         if (cin.fail()) {
             cin.clear();
             cin.ignore(1000, '\n');
             cout << "Opcion no valida: escribe un numero" << endl;
-            opcion = -1;                 // para que el ciclo siga
-            continue;                    // volver a mostrar el menu
+            opcion = -1;
+            continue;
         }
-        switch(opcion){
-
+        switch (opcion) {
         case 1: {
             string nombre;
             cout << "Nombre del enrutador: ";
@@ -63,77 +59,65 @@ int main()
             red.conectarEnrutadores(origen, destino, costo);
             break;
         }
-        case 3: {
-            string nombre;
-            cout << "Nombre del enrutador a eliminar: ";
-            cin >> nombre;
-            red.eliminarEnrutador(nombre);
+        case 3: { string n; cout << "Nombre: ";
+            cin >> n;
+            red.eliminarEnrutador(n);
             break;
         }
-        case 4: {
-            red.mostrarRed();
+        case 4: red.mostrarRed();
             break;
-        }
-        case 5: {string origen, destino;
-            cout << "Ingrese enrutador de origen: ";
+        case 5: {
+            string origen, destino;
+            cout << "Origen: ";
             cin >> origen;
-            cout << "Ingrese enrutador de destino: ";
+            cout << "Destino: ";
             cin >> destino;
-            red.rutaMinimaConEstadisticas(origen, destino);
+            red.mostrarRuta(origen, destino);
             break;
         }
         case 6: {
-            string origen, destino;
-            cout << "Ingrese enrutador de origen: ";
-            cin >> origen;
-            cout << "Ingrese enrutador de destino: ";
-            cin >> destino;
-            red.encontrarRutaMinima(origen, destino);
+            string n;
+            cout << "Nombre: ";
+            cin >> n;
+            red.mostrarTablaDe(n);
+            break; }
+        case 7: red.mostrarEnrutadores();
+            break;
+        case 8: { int c;
+            cout << "Cuantos: ";
+            cin >> c;
+            red.generarRedAleatoria(c);
             break;
         }
-        case 7:
-            red.mostrarEnrutadores();
-            break;
-
-        case 8: {
-            int cantidad;
-            cout << "¿Cuantos enrutadores quieres generar?: ";
-            cin >> cantidad;
-            red.generarRedAleatoria(cantidad);
-
-            break;
-        }
-
-
         case 9: {
-            string archivo;
-            cout << "Nombre del archivo para guardar: ";
-            cin >> archivo;
-            red.guardarEnArchivo(archivo);
+            string a; cout << "Archivo: ";
+            cin >> a;
+            red.guardarEnArchivo(a);
             break;
         }
         case 10: {
-            string archivo;
-            cout << "Nombre del archivo para cargar: ";
-            cin >> archivo;
-            red.cargarDesdeArchivo(archivo);
+            string a;
+            cout << "Archivo: ";
+            cin >> a; red.cargarDesdeArchivo(a);
+            break; }
+        case 11: {
+            string origen, destino;
+            cout << "Origen: ";
+            cin >> origen;
+            cout << "Destino: ";
+            cin >> destino;
+            red.desconectarEnrutadores(origen, destino);
             break;
         }
-
-        case 11:{
-
-            enrutador.mostrarVecinos();
+        case 12: { string n;
+            cout << "Nombre: ";
+            cin >> n;
+            red.mostrarVecinosDe(n);
             break;
         }
-
-        case 0:
-            cout << "Hasta luego!\n";
-            break;
-
-        default:
-            cout << "Opcion no valida.\n";
+        case 0: cout << "Hasta luego!\n"; break;
+        default: cout << "Opcion no valida.\n";
         }
-
     }
     return 0;
 }

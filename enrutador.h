@@ -17,7 +17,8 @@ class Enrutador
 {
 private:
     string nombre;
-    map<string, int> vecinos;  // vecinos directos y sus costos
+    map<string, int> vecinos;        // vecinos directos y sus costos
+    map<string, InfoRuta> tabla;     // tabla de costos: destino -> mejor ruta
 
 public:
     Enrutador();
@@ -30,17 +31,22 @@ public:
     //  Getters
     string obtenerNombre() const;
 
-    // Agregar o modificar un vecino
+    // Agregar
     void agregarVecino(string vecino, int costo);
 
-    // Eliminar un vecino
+
     void eliminarVecino(string vecino);
 
-    //  Mostrar vecinos
+
     void mostrarVecinos() const;
 
-    // Obtener el mapa de vecinos
+
     map<string, int> obtenerVecinos() const;
+
+    // Tabla de costos (la llena la Red)
+    void actualizarTabla(const map<string, InfoRuta>& nuevaTabla);
+    map<string, InfoRuta> obtenerTabla() const;
+    void mostrarTabla() const;
 
 
 };

@@ -1,5 +1,5 @@
 #include "red.h"
-#include "Enrutador.h"
+#include "enrutador.h"
 #include <iostream>
 #include <map>
 #include <string>
@@ -17,8 +17,9 @@ Red::Red() {}
 
 void Red::agregarEnrutador(const string& nombre){
     if (existeEnrutador(nombre))
-        return;
+        return;                              // ya existe: conserva sus vecinos
     enrutadores[nombre] = Enrutador(nombre);
+    actualizarTablasEnrutamiento();
 }
 // Eliminar un enrutador de la red
 void Red::eliminarEnrutador(const string& nombre) {
@@ -35,8 +36,10 @@ void Red::eliminarEnrutador(const string& nombre) {
         par.second.eliminarVecino(nombre);
 
     cout << "Enrutador '" << nombre << "' eliminado correctamente de la red." << endl;
+    actualizarTablasEnrutamiento();
 }
 
+// Verificar si un enrutador existe
 bool Red::existeEnrutador(const string& nombre) const {
     return enrutadores.find(nombre) != enrutadores.end();
 }
@@ -59,21 +62,74 @@ void Red::mostrarRed() const {
 }
 
 
-map<string, int> Red::calcularRutasDesde(const string& origen) {
+// Dijkstra desde un origen. Devuelve, para cada destino alcanzable,
+// su costo minimo, el vecino por donde hay que salir y la ruta completa.
+map<string, InfoRuta> Red::calcularRutasDesde(const string& origen) const {
+    map<string, int> distancias;
+    map<string, string> anterior;
+    set<string> visitados;
 
-    return map<string, int>();
+    for (const auto& par : enrutadores)
+        distancias[par.first] = INT_MAX;     // INT_MAX = "todavia no se como llegar"
+    distancias[origen] = 0;
+
+    while (visitados.size() < enrutadores.size()) {
+        // 1. elegir el no visitado mas cercano
+        string actual = "";
+        int menor = INT_MAX;
+        for (const auto& par : distancias) {
+            if (visitados.find(par.first) == visitados.end() && par.second < menor) {
+                menor = par.second;
+                actual = par.first;
+            }
+        }
+        if (actual == "") break;             // los que quedan no son alcanzables
+
+        // 2. confirmarlo
+        visitados.insert(actual);
+
+        // 3. ver si mejora el costo de sus vecinos
+        for (const auto& vecino : enrutadores.at(actual).obtenerVecinos()) {
+            int nuevoCosto = distancias[actual] + vecino.second;
+            if (nuevoCosto < distancias[vecino.first]) {
+                distancias[vecino.first] = nuevoCosto;
+                anterior[vecino.first] = actual;  // llegue a el desde 'actual'
+            }
+        }
+    }
+
+    // 4. armar la tabla: solo los destinos alcanzables
+    map<string, InfoRuta> tabla;
+    for (const auto& par : distancias) {
+        if (par.second == INT_MAX) continue;     // no hay camino: no va en la tabla
+
+        InfoRuta info;
+        info.costo = par.second;
+
+        // reconstruir la ruta leyendo 'anterior' al reves
+        string nodo = par.first;
+        while (nodo != origen) {
+            info.rutaCompleta.push_back(nodo);
+            nodo = anterior[nodo];
+        }
+        info.rutaCompleta.push_back(origen);
+        reverse(info.rutaCompleta.begin(), info.rutaCompleta.end());
+
+        // el siguiente salto es el segundo de la ruta (o el mismo si es el origen)
+        if (info.rutaCompleta.size() > 1)
+            info.siguienteSalto = info.rutaCompleta[1];
+        else
+            info.siguienteSalto = origen;
+
+        tabla[par.first] = info;
+    }
+    return tabla;
 }
 
-vector<string> Red::obtenerRutaMasCorta(const string& origen, const string& destino) {
-
-    return vector<string>();
-}
 
 
-int Red::obtenerCostoMinimo(const string& origen, const string& destino) {
-    //Implementar después de Dijkstra
-    return -1;
-}
+
+
 // Conecta dos enrutadores (origen y destino) con un costo
 
 void Red::conectarEnrutadores(const string& origen, const string& destino, int costo) {
@@ -91,9 +147,12 @@ void Red::conectarEnrutadores(const string& origen, const string& destino, int c
     }
     enrutadores[origen].agregarVecino(destino, costo);   // A anota a B
     enrutadores[destino].agregarVecino(origen, costo);   // B anota a A
+    actualizarTablasEnrutamiento();
 }
+// Cada vez que la red cambia, se recalcula la tabla de TODOS los enrutadores
 void Red::actualizarTablasEnrutamiento() {
-
+    for (auto& par : enrutadores)
+        par.second.actualizarTabla(calcularRutasDesde(par.first));
 }
 
 void Red::guardarEnArchivo(const string& nombreArchivo) const {
@@ -129,71 +188,60 @@ void Red::cargarDesdeArchivo(const string& nombreArchivo) {
         agregarEnrutador(origen);
         agregarEnrutador(destino);
         conectarEnrutadores(origen, destino, costo);
-
     }
 
     archivo.close();
     cout << "Red cargada desde " << nombreArchivo << " exitosamente.\n";
 }
-void Red::encontrarRutaMinima(const string& origen, const string& destino) const {
-    if (enrutadores.find(origen) == enrutadores.end() || enrutadores.find(destino) == enrutadores.end()) {
+void Red::mostrarRuta(const string& origen, const string& destino) const {
+    if (!existeEnrutador(origen) || !existeEnrutador(destino)) {
         cout << "Uno o ambos enrutadores no existen.\n";
         return;
     }
-
-    // Inicializar estructuras
-    map<string, int> distancias;
-    map<string, string> anteriores;
-    priority_queue<pair<int, string>, vector<pair<int, string>>, greater<>> pq;
-
-    for (const auto& par : enrutadores) {
-        distancias[par.first] = INT_MAX;
-    }
-    distancias[origen] = 0;
-    pq.push({0, origen});
-
-    while (!pq.empty()) {
-        string actual = pq.top().second;
-        int distActual = pq.top().first;
-        pq.pop();
-
-        const auto& vecinos = enrutadores.at(actual).obtenerVecinos();
-        for (const auto& vecino : vecinos) {
-            int nuevaDist = distActual + vecino.second;
-            if (nuevaDist < distancias[vecino.first]) {
-                distancias[vecino.first] = nuevaDist;
-                anteriores[vecino.first] = actual;
-                pq.push({nuevaDist, vecino.first});
-            }
-        }
-    }
-
-    // Mostrar resultado
-    if (distancias[destino] == INT_MAX) {
+    map<string, InfoRuta> tabla = enrutadores.at(origen).obtenerTabla();
+    if (tabla.find(destino) == tabla.end()) {
         cout << "No hay camino entre " << origen << " y " << destino << endl;
         return;
     }
-
-    // Mostrar costo total
-    cout << "Costo mínimo de " << origen << " a " << destino << ": " << distancias[destino] << endl;
-
-    // Reconstruir ruta
-    vector<string> camino;
-    string actual = destino;
-    while (actual != origen) {
-        camino.push_back(actual);
-        actual = anteriores[actual];
-    }
-    camino.push_back(origen);
-    reverse(camino.begin(), camino.end());
-
-    // Mostrar ruta
+    const InfoRuta& info = tabla.at(destino);
+    cout << "Costo minimo de " << origen << " a " << destino << ": " << info.costo << endl;
     cout << "Ruta: ";
-    for (size_t i = 0; i < camino.size(); ++i) {
-        cout << camino[i];
-        if (i < camino.size() - 1) cout << " -> ";
+    for (size_t i = 0; i < info.rutaCompleta.size(); i++) {
+        cout << info.rutaCompleta[i];
+        if (i < info.rutaCompleta.size() - 1) cout << " -> ";
     }
     cout << endl;
+}
+
+void Red::mostrarTablaDe(const string& nombre) const {
+    if (!existeEnrutador(nombre)) {
+        cout << "Error: el enrutador " << nombre << " no existe" << endl;
+        return;
+    }
+    enrutadores.at(nombre).mostrarTabla();
+}
+
+void Red::desconectarEnrutadores(const string& origen, const string& destino) {
+    if (!existeEnrutador(origen) || !existeEnrutador(destino)) {
+        cout << "Error: uno o ambos enrutadores no existen" << endl;
+        return;
+    }
+    if (enrutadores.at(origen).obtenerVecinos().count(destino) == 0) {
+        cout << "Error: " << origen << " y " << destino << " no estan conectados" << endl;
+        return;
+    }
+    enrutadores[origen].eliminarVecino(destino);
+    enrutadores[destino].eliminarVecino(origen);
+    cout << "Enlace " << origen << " - " << destino << " eliminado" << endl;
+    actualizarTablasEnrutamiento();
+}
+
+void Red::mostrarVecinosDe(const string& nombre) const {
+    if (!existeEnrutador(nombre)) {
+        cout << "Error: el enrutador " << nombre << " no existe" << endl;
+        return;
+    }
+    enrutadores.at(nombre).mostrarVecinos();
 }
 void Red::mostrarEnrutadores() const {
     cout << "\nEnrutadores en la red:\n";
@@ -202,79 +250,7 @@ void Red::mostrarEnrutadores() const {
     }
 }
 
-void Red::rutaMinimaConEstadisticas(const string& origen, const string& destino) {
-    if (enrutadores.find(origen) == enrutadores.end() || enrutadores.find(destino) == enrutadores.end()) {
-        cout << "Uno o ambos enrutadores no existen.\n";
-        return;
-    }
-    // Estructuras para Dijkstra
-    map<string, int> distancias;
-    map<string, string> anterior;
-    set<string> visitados;
-    int iteraciones = 0;
 
-    for (const auto& par : enrutadores) {
-        distancias[par.first] = INT_MAX;
-    }
-    distancias[origen] = 0;
-
-    while (visitados.size() < enrutadores.size()) {
-        // Elegir nodo no visitado con menor distancia
-        string actual = "";
-        int menor = INT_MAX;
-        for (const auto& par : distancias) {
-            if (visitados.find(par.first) == visitados.end() && par.second < menor) {
-                menor = par.second;
-                actual = par.first;
-            }
-        }
-
-        if (actual == "") break;  // No hay más alcanzables
-
-        visitados.insert(actual);
-        iteraciones++;
-
-        for (const auto& vecino : enrutadores[actual].obtenerVecinos()) {
-            int nuevoCosto = distancias[actual] + vecino.second;
-            if (nuevoCosto < distancias[vecino.first]) {
-                distancias[vecino.first] = nuevoCosto;
-                anterior[vecino.first] = actual;
-            }
-        }
-    }
-
-    if (distancias[destino] == INT_MAX) {
-        cout << "No hay ruta entre " << origen << " y " << destino << ".\n";
-        return;
-    }
-
-    // Mostrar resultados
-    cout << "Costo mínimo de " << origen << " a " << destino << ": " << distancias[destino] << endl;
-
-    // Reconstruir camino
-    vector<string> camino;
-    string nodo = destino;
-    while (nodo != origen) {
-        camino.push_back(nodo);
-        nodo = anterior[nodo];
-    }
-    camino.push_back(origen);
-    reverse(camino.begin(), camino.end());
-
-    cout << "Ruta: ";
-    for (size_t i = 0; i < camino.size(); ++i) {
-        cout << camino[i];
-        if (i != camino.size() - 1) cout << " -> ";
-    }
-    cout << endl;
-
-    // Mostrar iteraciones
-    cout << "Iteraciones realizadas: " << iteraciones << endl;
-
-    // Estimar memoria (aproximada)
-    int memoria = enrutadores.size() * sizeof(Enrutador);
-    cout << "Memoria estimada usada por la red: " << memoria << " bytes\n";
-}
 
 void Red::generarRedAleatoria(int cantidad) {
     if (cantidad < 2) {
@@ -300,7 +276,6 @@ void Red::generarRedAleatoria(int cantidad) {
                 string destino(1, 'A' + j);
 
                 conectarEnrutadores(origen, destino, costo);
-
             }
         }
     }

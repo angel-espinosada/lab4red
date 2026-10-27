@@ -1,7 +1,7 @@
 #ifndef RED_H
 #define RED_H
 
-#include "Enrutador.h"
+#include "enrutador.h"
 #include <map>
 #include <string>
 #include <vector>
@@ -25,14 +25,14 @@ public:
     void guardarEnArchivo(const string& nombreArchivo) const;
     void cargarDesdeArchivo(const string& nombreArchivo);
     void conectarEnrutadores(const string& origen, const string& destino, int costo);
-    void encontrarRutaMinima(const string& origen, const string& destino) const;
     void mostrarEnrutadores() const;
     void generarRedAleatoria(int cantidad);
-    void rutaMinimaConEstadisticas(const string& origen, const string& destino);
     // Dijkstra
-    map<string, int> calcularRutasDesde(const string& origen);
-    vector<string> obtenerRutaMasCorta(const string& origen, const string& destino);
-    int obtenerCostoMinimo(const string& origen, const string& destino);
+    map<string, InfoRuta> calcularRutasDesde(const string& origen) const;
+    void mostrarRuta(const string& origen, const string& destino) const;
+    void mostrarTablaDe(const string& nombre) const;
+    void desconectarEnrutadores(const string& origen, const string& destino);
+    void mostrarVecinosDe(const string& nombre) const;
 
     // Actualización de tablas
     void actualizarTablasEnrutamiento();

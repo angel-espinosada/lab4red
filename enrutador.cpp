@@ -1,5 +1,6 @@
 #include "enrutador.h"
 #include<iostream>
+using namespace std;
 #include<queue>
 #include <map>
 #include <vector>
@@ -19,27 +20,27 @@ Enrutador::~Enrutador() {
     // No hay memoria dinámica, por ahora no hace nada
 }
 
-// Setter para cambiar el nombre
+// Setter
 void Enrutador::establecerNombre(string nuevoNombre) {
     nombre = nuevoNombre;
 }
 
-// Getter para obtener el nombre
+// Getter
 string Enrutador::obtenerNombre() const {
     return nombre;
 }
 
-// Agregar o actualizar un vecino con su costo
+
 void Enrutador::agregarVecino(string vecino, int costo) {
     vecinos[vecino] = costo;  // si ya existe, lo actualiza
 }
 
-// Eliminar un vecino
+
 void Enrutador::eliminarVecino(string vecino) {
     vecinos.erase(vecino);
 }
 
-// Mostrar vecinos por pantalla
+
 void Enrutador::mostrarVecinos() const {
     cout << "Vecinos de " << nombre << ":" << endl;
     for (const auto& par : vecinos) {
@@ -47,7 +48,31 @@ void Enrutador::mostrarVecinos() const {
     }
 }
 
-// Obtener mapa completo de vecinos
+
 map<string, int> Enrutador::obtenerVecinos() const {
     return vecinos;
+}
+
+// Reemplaza la tabla completa por la que calculo la Red
+void Enrutador::actualizarTabla(const map<string, InfoRuta>& nuevaTabla) {
+    tabla = nuevaTabla;
+}
+
+map<string, InfoRuta> Enrutador::obtenerTabla() const {
+    return tabla;
+}
+
+void Enrutador::mostrarTabla() const {
+    cout << "Tabla de costos de " << nombre << ":" << endl;
+    cout << "  Destino  Costo  Salir por  Ruta" << endl;
+    for (const auto& par : tabla) {
+        const InfoRuta& info = par.second;
+        cout << "  " << par.first << "        " << info.costo
+             << "      " << info.siguienteSalto << "         ";
+        for (size_t i = 0; i < info.rutaCompleta.size(); i++) {
+            cout << info.rutaCompleta[i];
+            if (i < info.rutaCompleta.size() - 1) cout << " -> ";
+        }
+        cout << endl;
+    }
 }
