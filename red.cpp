@@ -16,6 +16,8 @@ Red::Red() {}
 
 
 void Red::agregarEnrutador(const string& nombre){
+    if (existeEnrutador(nombre))
+        return;
     enrutadores[nombre] = Enrutador(nombre);
 }
 // Eliminar un enrutador de la red
@@ -27,12 +29,14 @@ void Red::eliminarEnrutador(const string& nombre) {
     }
 
     enrutadores.erase(it);
-    cout << "Enrutador '" << nombre << "' eliminado correctamente de la red." << endl;
 
-    // TODO: Actualizar tablas de enrutamiento después de eliminar
+    // quitarlo de la libreta de todos los demas
+    for (auto& par : enrutadores)
+        par.second.eliminarVecino(nombre);
+
+    cout << "Enrutador '" << nombre << "' eliminado correctamente de la red." << endl;
 }
 
-// Verificar si un enrutador existe
 bool Red::existeEnrutador(const string& nombre) const {
     return enrutadores.find(nombre) != enrutadores.end();
 }
@@ -73,7 +77,20 @@ int Red::obtenerCostoMinimo(const string& origen, const string& destino) {
 // Conecta dos enrutadores (origen y destino) con un costo
 
 void Red::conectarEnrutadores(const string& origen, const string& destino, int costo) {
-    enrutadores[origen].agregarVecino(destino, costo);
+    if (!existeEnrutador(origen) || !existeEnrutador(destino)) {
+        cout << "Error: uno o ambos enrutadores no existen" << endl;
+        return;
+    }
+    if (origen == destino) {
+        cout << "Error: un enrutador no se puede conectar consigo mismo" << endl;
+        return;
+    }
+    if (costo <= 0) {
+        cout << "Error: el costo debe ser mayor que 0" << endl;
+        return;
+    }
+    enrutadores[origen].agregarVecino(destino, costo);   // A anota a B
+    enrutadores[destino].agregarVecino(origen, costo);   // B anota a A
 }
 void Red::actualizarTablasEnrutamiento() {
 
@@ -112,8 +129,7 @@ void Red::cargarDesdeArchivo(const string& nombreArchivo) {
         agregarEnrutador(origen);
         agregarEnrutador(destino);
         conectarEnrutadores(origen, destino, costo);
-        enrutadores[origen].agregarVecino(destino, costo);
-        enrutadores[destino].agregarVecino(origen, costo);
+
     }
 
     archivo.close();
@@ -284,7 +300,7 @@ void Red::generarRedAleatoria(int cantidad) {
                 string destino(1, 'A' + j);
 
                 conectarEnrutadores(origen, destino, costo);
-                conectarEnrutadores(destino, origen, costo); // bidireccional
+
             }
         }
     }

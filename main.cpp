@@ -26,15 +26,25 @@ int main()
         cout << "9. Guardar red en archivo\n";
         cout << "10. Cargar red desde archivo\n";
         cout<< "12. mostrar vecinos\n";
-        cout << "11. Salir\n";
-        cin>>opcion;
+        cout << "0. Salir\n";
+        cin >> opcion;
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(1000, '\n');
+            cout << "Opcion no valida: escribe un numero" << endl;
+            opcion = -1;                 // para que el ciclo siga
+            continue;                    // volver a mostrar el menu
+        }
         switch(opcion){
 
         case 1: {
             string nombre;
             cout << "Nombre del enrutador: ";
             cin >> nombre;
-            red.agregarEnrutador(nombre);
+            if (red.existeEnrutador(nombre))
+                cout << "El enrutador " << nombre << " ya existe" << endl;
+            else
+                red.agregarEnrutador(nombre);
             break;
         }
         case 2: {
@@ -44,6 +54,10 @@ int main()
             cin >> origen;
             cout << "Destino: ";
             cin >> destino;
+            if (!red.existeEnrutador(origen) || !red.existeEnrutador(destino)) {
+                cout << "Error: uno o ambos enrutadores no existen" << endl;
+                break;
+            }
             cout << "Costo: ";
             cin >> costo;
             red.conectarEnrutadores(origen, destino, costo);
@@ -105,19 +119,21 @@ int main()
             red.cargarDesdeArchivo(archivo);
             break;
         }
-        case 14:
-            cout << "Hasta luego!\n";
-            break;
 
-        case 12:{
+        case 11:{
 
             enrutador.mostrarVecinos();
             break;
         }
+
+        case 0:
+            cout << "Hasta luego!\n";
+            break;
+
         default:
             cout << "Opcion no valida.\n";
         }
 
-    } while (opcion != 14);
+    }
     return 0;
 }
